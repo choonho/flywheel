@@ -96,7 +96,6 @@ class myHandler(BaseHTTPRequestHandler):
 <td>
     <image src="download_image.jpg" style="width:0px;height:0px;">
   <button type="button" onclick="mytest = setInterval(do_test, 10000)">Start Speed Test</button>
-  <button type="button" onclick="clearTimeout(mytest)">Stop Speed Test</button>
 </td>
 </tr>
 </table>
