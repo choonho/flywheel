@@ -17,7 +17,7 @@ python flywheel.py
 
 # Usage
 
-Open a web browser with http://<server>
+Open a web browser with http://server
 
 # Visualization Tool
 
@@ -28,9 +28,9 @@ LineChart shows the bandwidth history.
 
 Type | URL
 ---- | ----
-GET  | http://<server>/download_image.jpg
-GET  | http://<server>/speed
-GET  | http://<server>/history
+GET  | http://server/download_image.jpg
+GET  | http://server/speed
+GET  | http://server/history
 
 
 
