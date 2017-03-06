@@ -95,12 +95,34 @@ class myHandler(BaseHTTPRequestHandler):
 <tr>
 <td>
     <image src="download_image.jpg" style="width:0px;height:0px;">
-  <button type="button" onclick="mytest = setInterval(do_test, 10000)">Start Speed Test</button>
+  <button type="button" id="b1" onclick="mytest()">Start Speed Test</button>
+  <button type="button" id="b2" onclick="stop_test()">Stop Speed Test</button>
 </td>
 </tr>
 </table>
 </body>
 <script type="text/javascript">
+    var b1 = document.getElementById("b1")
+    var b2 = document.getElementById("b2")
+    var count = 1;
+    b2.style.visibility = "hidden";
+    var myvar;
+    function mytest() {
+        b1.style.visibility = "hidden";
+        b2.style.visibility = "visible";
+        myvar = setInterval(function() {
+          var img = new Image();
+          console.log("download image");
+          img.src = "/download_image.jpg?" + count;
+          console.log(count);
+          count = count + 1;
+        }, 10000);
+    }
+    function stop_test() {
+        b1.style.visibility = "visible";
+        b2.style.visibility = "hidden";
+        clearInterval(myvar);
+    }
     google.charts.load('current', {'packages':['gauge','corechart']});
     google.charts.setOnLoadCallback(drawGauge);
     google.charts.setOnLoadCallback(drawLine);
@@ -192,15 +214,6 @@ class myHandler(BaseHTTPRequestHandler):
 
 
 
-    }
-
-    var count = 1;
-    function do_test() {
-      var img = new Image();
-          console.log("download image");
-          img.src = "/download_image.jpg?" + count;
-          console.log(count);
-          count = count + 1;
     }
 
 </script>
