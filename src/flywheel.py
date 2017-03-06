@@ -71,7 +71,7 @@ class myHandler(BaseHTTPRequestHandler):
         # Push to history
         global history
         history.append(current_speed)
-        if len(history) > 10:
+        if len(history) > 60:
           history.pop(0)
 
         return
@@ -112,10 +112,9 @@ class myHandler(BaseHTTPRequestHandler):
             ]);
         var options = {
             width:400, height:120,
-            redFrom:0, redTo:100,
-            yellowFrom:100, yellowTo:200,
-            minorTicks: 50,
-            max: 1000 
+            redFrom:0, redTo:2,
+            yellowFrom:2, yellowTo:4,
+            max: 10 
             };
         var chart = new google.visualization.Gauge(document.getElementById('chart_div'));
         chart.draw(data, options);
@@ -128,7 +127,28 @@ class myHandler(BaseHTTPRequestHandler):
             request.open('GET','/speed', false);
             request.send(null);
             if (request.status == 200) {
-              console.log(request.responseText);
+              current_speed=parseFloat(request.responseText);
+              if (current_speed > 100) {
+                 options.max = 1000;
+                 options.redFrom = 0;
+                 options.redTo=200;
+                 options.yellowFrom=200;
+                 options.yellowTo=400;
+              } else if (current_speed > 1000) {
+                 options.max = 10000;
+                 options.redFrom = 0;
+                 options.redTo=2000;
+                 options.yellowFrom=2000;
+                 options.yellowTo=4000;
+ 
+              } else {
+                 options.max = 10;
+                 options.redFrom = 0;
+                 options.redTo=2;
+                 options.yellowFrom=2;
+                 options.yellowTo=4;
+ 
+              }
               data.setValue(0, 1, request.responseText);
               chart.draw(data, options);
             }
@@ -162,11 +182,13 @@ class myHandler(BaseHTTPRequestHandler):
               for(var i in result) {
                 console.log(i);
                 console.log(result[i]);
-                data.addRow([parseInt(i),parseInt(result[i])]);
+                data.addRow([parseInt(i),parseFloat(result[i])]);
               }
               console.log(result);
               chart.draw(data, options);
             }
+            delete request;
+            delete data;
             }, 5000);
 
 
