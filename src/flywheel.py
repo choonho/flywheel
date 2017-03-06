@@ -2,6 +2,7 @@
 
 import os
 import time
+import urlparse
 
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 from optparse import OptionParser
@@ -13,15 +14,35 @@ volume =fp.tell()
 fp.close()
 
 current_speed = 0
+history = []
 
 class myHandler(BaseHTTPRequestHandler):
     # Handler for the GET requests
     def do_GET(self):
         print "GET: %s" % self.path
-        if self.path == "/":
+        o = urlparse.urlparse(self.path)
+        req = o.path
+        if req == "/":
             self.main_page()
-        elif self.path == "/download_image.jpg":
+        elif req == "/download_image.jpg":
             self.download_image(10)
+        elif req == "/speed":
+            self.send_speed()
+        elif req == "/history":
+            self.send_history()
+
+        return
+
+    def send_speed(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write("%s" % current_speed)
+        return
+
+    def send_history(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(','.join(map(str,history)))
         return
 
     def download_image(self, size):
@@ -46,7 +67,13 @@ class myHandler(BaseHTTPRequestHandler):
         print "Time: %s" % elapse
         global current_speed
         current_speed = volume * 8 / elapse / 1024 / 1024
-        print "Bandwith: %s Mbps" % current_speed
+
+        # Push to history
+        global history
+        history.append(current_speed)
+        if len(history) > 10:
+          history.pop(0)
+
         return
 
 
@@ -54,37 +81,111 @@ class myHandler(BaseHTTPRequestHandler):
         html = """<html>
 <head>
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+<body>
+<table>
+<tr>
+<td>
+    <div id="chart_div" style="width:400px; height:150px;"></div>
+</td>
+<td>
+    <div id="curve_chart" style="width:600px; height:200px;"></div>
+</td>
+</tr>
+<tr>
+<td>
+    <image src="download_image.jpg" style="width:0px;height:0px;">
+  <button type="button" onclick="mytest = setInterval(do_test, 10000)">Start Speed Test</button>
+  <button type="button" onclick="clearTimeout(mytest)">Stop Speed Test</button>
+</td>
+</tr>
+</table>
+</body>
 <script type="text/javascript">
-    google.charts.load('current', {'packages':['gauge']});
-    google.charts.setOnLoadCallback(drawChart);
-    function drawChart() {
+    google.charts.load('current', {'packages':['gauge','corechart']});
+    google.charts.setOnLoadCallback(drawGauge);
+    google.charts.setOnLoadCallback(drawLine);
+    function drawGauge() {
         var data = google.visualization.arrayToDataTable([
             ['Label','Value'],
-            ['TCP Download',0]
+            ['Download',0]
             ]);
         var options = {
             width:400, height:120,
-            redFrom:0, redTo:10,
-            yellowFrom:10, yellowTo:20,
-            minorTicks: 5
+            redFrom:0, redTo:100,
+            yellowFrom:100, yellowTo:200,
+            minorTicks: 50,
+            max: 1000 
             };
         var chart = new google.visualization.Gauge(document.getElementById('chart_div'));
         chart.draw(data, options);
 
+
+        var current_speed = 0;
         setInterval(function() {
-            data.setValue(0, 1, %s);
-            chart.draw(data, options);
-            }, 1000);
+            console.log("call speed");
+            var request = new XMLHttpRequest();
+            request.open('GET','/speed', false);
+            request.send(null);
+            if (request.status == 200) {
+              console.log(request.responseText);
+              data.setValue(0, 1, request.responseText);
+              chart.draw(data, options);
+            }
+            }, 5000);
+
+       
     }
+
+    function drawLine() {
+        var options = {
+          title: 'Download Bandwidth',
+          curveType: 'function',
+          vAxis: {title:'Mbps'},
+          legend: { position: 'bottom' }
+        };
+
+        var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+
+
+        setInterval(function() {
+            console.log("call history");
+
+            var request = new XMLHttpRequest();
+            request.open('GET','/history', false);
+            request.send(null);
+            var data = new google.visualization.DataTable();
+            data.addColumn('number','count');
+            data.addColumn('number','bandwidth');
+            if (request.status == 200) {
+              result = request.responseText.split(",");
+              for(var i in result) {
+                console.log(i);
+                console.log(result[i]);
+                data.addRow([parseInt(i),parseInt(result[i])]);
+              }
+              console.log(result);
+              chart.draw(data, options);
+            }
+            }, 5000);
+
+
+
+    }
+
+    var count = 1;
+    function do_test() {
+      var img = new Image();
+          console.log("download image");
+          img.src = "/download_image.jpg?" + count;
+          console.log(count);
+          count = count + 1;
+    }
+
 </script>
-</head>
-<body>
-    <div id="chart_div" style="width:400px; height:120px;"></div>
-    <image src="download_image.jpg" style="width:0px;height:0px;">
-    Speed Test
-</body>
+
 <html>
-""" % current_speed
+""" 
 
         # Make bandwidth calculator
         self.send_response(200)
