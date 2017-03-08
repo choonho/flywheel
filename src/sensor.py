@@ -278,9 +278,11 @@ def tcpClient(tid, ip, port, cmd):
                 # End of Download
                 CONT = False
         logger.debug("END of tcpClient Thread:%s" % tid)
+    except:
+        pass
+    finally:
         s2 = time.time()
         report(tid, s0,s2,total,last=True)
-    finally:
         sock.close()
 
 def echoClient(tid, ip, port, cmd):
